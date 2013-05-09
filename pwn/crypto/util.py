@@ -12,7 +12,7 @@ from sympy.core import numbers
 from sympy import Symbol
 from fractions import Fraction
 
-import freq
+from pwn.crypto import freq
 
 # The expected index of coincidence value for English text
 ic_english = 0.065

@@ -5,9 +5,9 @@ from math import ceil
 from numpy import mean
 import matplotlib.pyplot as plt
 
-import util
-import freq
-import monoalphabetic as mono
+from pwn.crypto import freq
+from pwn.crypto import util
+from pwn.crypto.classical import mono
 
 #####################################
 # GENERAL CALCULATION OF KEY PERIOD #

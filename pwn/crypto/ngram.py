@@ -3,14 +3,15 @@ from os import path
 
 from pwn import read
 
-resource_dir = path.dirname(__file__)
-ngram_file = path.join(resource_dir, "count_%dl.txt")
+resource_dir = path.join(path.dirname(__file__), "resources")
+ngram_file = path.join(resource_dir, "ngrams_english_%d.txt")
 
 english_freq = {}
 for i in [2,3]:
     data = read(ngram_file % (i)).split()
     total = sum(map(int, data[1::2])) * 1.
     english_freq[i] = dict(zip(data[0::2], [int(x) / total for x in data[1::2]]))
+
 
 def generate_ngram(text, n=3):
     """

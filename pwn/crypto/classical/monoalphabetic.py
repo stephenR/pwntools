@@ -13,9 +13,9 @@ from fractions import gcd
 
 from pwn import log
 
-import util
-import freq
-import ngram
+from pwn.crypto import freq
+from pwn.crypto import ngram
+from pwn.crypto import util
 
 #################################
 # GENERIC MONOALPHABETIC CIPHER #

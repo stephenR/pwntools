@@ -58,7 +58,7 @@ def text(string, alphabet=string.uppercase):
     Returns:
         the frequency distribution for the text string over the target alphabet.
     """
-    n = len(alphabet)
+    n = len(string)
     freq = collections.defaultdict(float)
     for c in string:
         if c in alphabet: freq[c] += 1.0

@@ -1,6 +1,8 @@
 import signal
+
 from pwn import log
-from util import *
+
+from pwn.crypto import *
 
 def int2bytes(n):
     """PKCS#1 integer to bytes conversion, as used by RSA"""
