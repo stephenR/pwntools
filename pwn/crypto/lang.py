@@ -9,14 +9,14 @@ class Language:
     expected_ic = None
     frequencies = None
     # Resources for scoring text based on N-grams
-    ngrams_file = "english_3.txt"
+    ngrams_file = "ngrams_english_3.txt"
     ngrams = None
 
     @classmethod
     def get_ngrams(cls):
         if cls.ngrams == None:
-            resource_dir = path.dirname(__file__)
-            ngrams_location = path.join(resource_dir, cls.ngrams_file)
+            resource_dir = path.dirname(path.abspath(__file__))
+            ngrams_location = path.join(resource_dir, "resources", cls.ngrams_file)
             data = read(ngrams_location).split()
             total = sum(map(int, data[1::2])) * 1.
             cls.ngrams = dict(zip(data[0::2], [int(x) / total for x in data[1::2]]))
@@ -55,4 +55,4 @@ class English(Language):
         'Z' : 0.001
     }
     # Resources for scoring text based on N-grams
-    ngrams_file = "english_3.txt"
+    ngrams_file = "ngrams_english_3.txt"
