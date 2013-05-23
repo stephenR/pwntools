@@ -9,7 +9,8 @@ import string
 import random
 import operator
 import collections
-from fractions import gcd
+
+from gmpy import gcd
 
 from pwn import log
 
