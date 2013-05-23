@@ -6,6 +6,7 @@ from numpy import mean
 import matplotlib.pyplot as plt
 
 from pwn.crypto import freq
+from pwn.crypto import lang
 from pwn.crypto import util
 from pwn.crypto.classical import mono
 
@@ -13,7 +14,7 @@ from pwn.crypto.classical import mono
 # GENERAL CALCULATION OF KEY PERIOD #
 #####################################
 
-def strand_scores(strands, alphabet=string.uppercase):
+def strand_scores(strands, language=lang.English):
     """
     Calculate the index of coincidence of several texts.
 
@@ -27,12 +28,12 @@ def strand_scores(strands, alphabet=string.uppercase):
     """
     scores = []
     for strand in strands:
-        significant_length = len(filter(lambda c: c in alphabet, strand))
-        score = util.index_of_coincidence(freq.count(strand, alphabet), significant_length)
+        significant_length = len(filter(lambda c: c in language.alphabet, strand))
+        score = util.index_of_coincidence(freq.count(strand, language.alphabet), significant_length)
         scores.append( (score, strand) )
     return scores
 
-def key_period(guesses, ic_target=util.ic_english, alphabet=string.uppercase, prune = False, raw_score = False):
+def key_period(guesses, language=lang.English, prune = False, raw_score = False):
     """
     Score guesses on the key period of a ciphertext based on the distance between their
     index of coincidence and a target value. The distance is calculated from the mean
@@ -56,11 +57,11 @@ def key_period(guesses, ic_target=util.ic_english, alphabet=string.uppercase, pr
     """
     fitness = []
     for (length, strands) in guesses:
-        scores = strand_scores(strands, alphabet)
-        if not raw_score: fitness.append( (length, abs(ic_target - mean([score for score,_ in scores]))) )
+        scores = strand_scores(strands, language)
+        if not raw_score: fitness.append( (length, abs(language.expected_ic - mean([score for score,_ in scores]))) )
         else: fitness.append( (length, mean([score for score,_ in scores])) )
 
-    max_distance = ic_target / 10.0
+    max_distance = language.expected_ic / 10.0
     if prune: return filter(lambda (length, score): score < max_distance , fitness)
     else: return fitness
 
@@ -144,22 +145,22 @@ def graph_key_period(ciphertext, splitFunction, limit = None, ic_target=util.ic_
 # GENERAL ENCRYPTION / DECRYPTION #
 ###################################
 
-def encrypt(plaintext, key, cipher, alphabet=string.uppercase):
+def encrypt(plaintext, key, cipher, language=lang.English):
     (split, interleave) = cipher
     (_, strands) = split(plaintext, len(key))
     ciphers = []
     for i in range(len(strands)):
-        shift = alphabet.index(key[i])
-        ciphers.append( mono.encrypt_substitution(strands[i], mono._shift_dict(shift, alphabet)) )
+        shift = language.alphabet.index(key[i])
+        ciphers.append( mono.encrypt_substitution(strands[i], mono._shift_dict(shift, language)) )
     return interleave(ciphers, len(plaintext))
 
-def decrypt(ciphertext, key, cipher, alphabet=string.uppercase):
+def decrypt(ciphertext, key, cipher, language=lang.English):
     (split, interleave) = cipher
     (_, strands) = split(ciphertext, len(key))
     ciphers = []
     for i in range(len(strands)):
-        shift = alphabet.index(key[i])
-        ciphers.append( mono.decrypt_substitution(strands[i], mono._shift_dict(shift, alphabet)) )
+        shift = language.alphabet.index(key[i])
+        ciphers.append( mono.decrypt_substitution(strands[i], mono._shift_dict(shift, language)) )
     return interleave(ciphers, len(ciphertext))
 
 ###################
@@ -174,15 +175,15 @@ def interleave_vigenere(strands, length):
 
 vigenere_cipher = (split_vigenere, interleave_vigenere)
 
-def crack_vigenere(ciphertext, known_period=None, ic_target=util.ic_english, alphabet=None, frequencies=freq.english):
-    alphabet = choose_alphabet(ciphertext, alphabet)
+def crack_vigenere(ciphertext, known_period=None, language=lang.English):
+    alphabet = choose_alphabet(ciphertext, language.alphabet)
 
     ct = filter(lambda c: c in alphabet, ciphertext)
 
     if known_period == None:
         limit = int(len(ct) / (len(alphabet) * 1.47)) # Unicity distance of english, TODO: Be able to change language
         guesses = [split_vigenere(ct, period) for period in range(1, limit)]
-        possible = key_period(guesses, ic_target, alphabet)
+        possible = key_period(guesses, language)
     else: possible = [(known_period, 0)]
 
     results = []
@@ -190,7 +191,7 @@ def crack_vigenere(ciphertext, known_period=None, ic_target=util.ic_english, alp
         key = ""
         (length, ciphers) = split_vigenere(ct, period)
         for i in range(len(ciphers)):
-            (k,m) = mono.crack_shift(ciphers[i], alphabet, frequencies)
+            (k,m) = mono.crack_shift(ciphers[i], language)
             key += alphabet[k]
             ciphers[i] = m
         result = (key, interleave_vigenere(ciphers, len(ct)))

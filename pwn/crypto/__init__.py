@@ -1,4 +1,5 @@
 import freq
+import lang
 import ngram
 import util
 

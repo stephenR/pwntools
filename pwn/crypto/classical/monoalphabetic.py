@@ -14,6 +14,7 @@ from fractions import gcd
 from pwn import log
 
 from pwn.crypto import freq
+from pwn.crypto import lang
 from pwn.crypto import ngram
 from pwn.crypto import util
 
@@ -90,12 +91,12 @@ def crack_substitution(ciphertext, num_starts=20, num_iterations=3000, frequenci
     return (global_best_dict, encrypt_substitution(ciphertext, global_best_dict))
 
 
-def generic_crack(ciphertext, candidates, frequencies=freq.english, alphabet=string.uppercase):
+def generic_crack(ciphertext, candidates, language=lang.English):
     distances = []
     for candidate in candidates:
         trial = encrypt_substitution(ciphertext, candidate)
-        candidate_freq = freq.text(trial, alphabet)
-        distances.append(util.squared_differences(candidate_freq, frequencies))
+        candidate_freq = freq.text(trial, language.alphabet)
+        distances.append(util.squared_differences(candidate_freq, language.frequencies))
     guess = distances.index(min(distances))
     return (candidates[guess], encrypt_substitution(ciphertext, candidates[guess]))
 
@@ -103,7 +104,7 @@ def generic_crack(ciphertext, candidates, frequencies=freq.english, alphabet=str
 # AFFINE CIPHER #
 #################
 
-def _affine_dict(key, alphabet=string.uppercase):
+def _affine_dict(key, language=lang.English):
     """
     Generate a Affine-cipher dictionary for use as a generic substitution cipher.
 
@@ -116,10 +117,10 @@ def _affine_dict(key, alphabet=string.uppercase):
         a dictionary ready for use with the encrypt_substitution method.
     """
     (a, b) = key
-    n = len(alphabet)
-    return {alphabet[i]: alphabet[(a * i + b) % n] for i in range(n)}
+    n = len(language.alphabet)
+    return {language.alphabet[i]: language.alphabet[(a * i + b) % n] for i in range(n)}
 
-def encrypt_affine(plaintext, key, alphabet=string.uppercase):
+def encrypt_affine(plaintext, key, language=lang.English):
     """
     Encrypt a text using an Affine-cipher.
 
@@ -130,9 +131,9 @@ def encrypt_affine(plaintext, key, alphabet=string.uppercase):
         alphabet: the alphabet of symbols that the cipher is defined over.
                   symbols not in the alphabet will be ignored.
     """
-    return encrypt_substitution(plaintext, _affine_dict(key, alphabet))
+    return encrypt_substitution(plaintext, _affine_dict(key, language))
 
-def decrypt_affine(ciphertext, key, alphabet=string.uppercase):
+def decrypt_affine(ciphertext, key, language=lang.English):
     """
     Decrypt a text using an Affine-cipher.
 
@@ -143,9 +144,9 @@ def decrypt_affine(ciphertext, key, alphabet=string.uppercase):
         alphabet: the alphabet of symbols that the cipher is defined over.
                   symbols not in the alphabet will be ignored.
     """
-    return decrypt_substitution(ciphertext, _affine_dict(key, alphabet))
+    return decrypt_substitution(ciphertext, _affine_dict(key, language))
 
-def crack_affine(ciphertext, alphabet=string.uppercase, frequencies=freq.english):
+def crack_affine(ciphertext, language=lang.English):
     """
     Crack an Affine-cipher using squared differences between frequency distributions.
 
@@ -159,17 +160,17 @@ def crack_affine(ciphertext, alphabet=string.uppercase, frequencies=freq.english
         #TODO: Return a tuple with the key, format (key, plaintext)
         the plaintext of the broken cipher.
     """
-    n = len(alphabet)
+    n = len(language.alphabet)
     invertible = [i for i in range(n) if gcd(i,n) == 1]
     keys = [(a,b) for a in invertible for b in range(n)]
-    candidates = [_affine_dict(k) for k in keys]
-    return generic_crack(ciphertext, candidates, frequencies)
+    candidates = [_affine_dict(k, language) for k in keys]
+    return generic_crack(ciphertext, candidates, language)
 
 #################
 # ATBASH CIPHER #
 #################
 
-def _atbash_dict(alphabet=string.uppercase):
+def _atbash_dict(language=lang.English):
     """
     Generate a Atbash-cipher dictionary for use as a generic substitution cipher.
 
@@ -179,10 +180,10 @@ def _atbash_dict(alphabet=string.uppercase):
     Returns:
         a dictionary ready for use with the encrypt_substitution method.
     """
-    n = len(alphabet)
-    return _affine_dict((n - 1, n - 1), alphabet)
+    n = len(language.alphabet)
+    return _affine_dict((n - 1, n - 1), language)
 
-def encrypt_atbash(plaintext, alphabet=string.uppercase):
+def encrypt_atbash(plaintext, language=lang.English):
     """
     Encrypt a text using the Atbash cipher
 
@@ -191,9 +192,9 @@ def encrypt_atbash(plaintext, alphabet=string.uppercase):
         alphabet: the alphabet of symbols that the cipher is defined over.
                   symbols not in the alphabet will be ignored.
     """
-    return encrypt_substitution(plaintext, _atbash_dict(alphabet))
+    return encrypt_substitution(plaintext, _atbash_dict(language))
 
-def decrypt_atbash(ciphertext, alphabet=string.uppercase):
+def decrypt_atbash(ciphertext, language=lang.English):
     """
     Decrypt a text using the Atbash cipher.
     Here for completeness, same as encrypting!
@@ -203,9 +204,9 @@ def decrypt_atbash(ciphertext, alphabet=string.uppercase):
         alphabet: the alphabet of symbols that the cipher is defined over.
                   symbols not in the alphabet will be ignored.
     """
-    return encrypt_atbash(ciphertext, alphabet)
+    return encrypt_atbash(ciphertext, language)
 
-def crack_atbash(ciphertext, alphabet=string.uppercase):
+def crack_atbash(ciphertext, language=lang.English):
     """
     "Crack" an Atbash cipher.
     Here for completeness, same as encrypting/decrypting!
@@ -215,13 +216,13 @@ def crack_atbash(ciphertext, alphabet=string.uppercase):
         alphabet: the alphabet of symbols that the cipher is defined over.
                   symbols not in the alphabet will be ignored.
     """
-    return encrypt_atbash(ciphertext, alphabet)
+    return encrypt_atbash(ciphertext, language)
 
 ################
 # SHIFT CIPHER #
 ################
 
-def _shift_dict(shift=3, alphabet=string.uppercase):
+def _shift_dict(shift=3, language=lang.English):
     """
     Generate a Shift-cipher dictionary for use as a generic substitution cipher.
 
@@ -232,9 +233,9 @@ def _shift_dict(shift=3, alphabet=string.uppercase):
     Returns:
         a dictionary ready for use with the encrypt_substitution method.
     """
-    return _affine_dict((1,shift), alphabet)
+    return _affine_dict((1,shift), language)
 
-def encrypt_shift(plaintext, key, alphabet=string.uppercase):
+def encrypt_shift(plaintext, key, language=lang.English):
     """
     Encrypt a text using a Shift-cipher.
 
@@ -244,9 +245,9 @@ def encrypt_shift(plaintext, key, alphabet=string.uppercase):
         alphabet: the alphabet of symbols that the cipher is defined over.
                   symbols not in the alphabet will be ignored.
     """
-    return encrypt_substitution(plaintext, _shift_dict(key, alphabet))
+    return encrypt_substitution(plaintext, _shift_dict(key, language))
 
-def decrypt_shift(ciphertext, key, alphabet=string.uppercase):
+def decrypt_shift(ciphertext, key, language=lang.English):
     """
     Decrypt a text using a Shift-cipher.
 
@@ -256,9 +257,9 @@ def decrypt_shift(ciphertext, key, alphabet=string.uppercase):
         alphabet: the alphabet of symbols that the cipher is defined over.
                   symbols not in the alphabet will be ignored.
     """
-    return decrypt_substitution(ciphertext, _shift_dict(key, alphabet))
+    return decrypt_substitution(ciphertext, _shift_dict(key, language))
 
-def crack_shift(ciphertext, alphabet=string.uppercase, frequencies=freq.english):
+def crack_shift(ciphertext, language=lang.English):
     """
     Crack a Shift-cipher using squared differences between frequency distributions.
 
@@ -271,7 +272,7 @@ def crack_shift(ciphertext, alphabet=string.uppercase, frequencies=freq.english)
     Returns:
         a tuple (k, p) consisting of the shift amount and the plaintext of the broken cipher.
     """
-    candidates = [_shift_dict(i, alphabet) for i in range(len(alphabet))]
-    (dictionary, plaintext) = generic_crack(ciphertext, candidates, frequencies, alphabet)
-    shift = (key for key,value in dictionary.items() if value == alphabet[0]).next()
-    return (alphabet.index(shift), plaintext)
+    candidates = [_shift_dict(i, language) for i in range(len(language.alphabet))]
+    (dictionary, plaintext) = generic_crack(ciphertext, candidates, language)
+    shift = (key for key,value in dictionary.items() if value == language.alphabet[0]).next()
+    return (language.alphabet.index(shift), plaintext)
