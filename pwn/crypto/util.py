@@ -1,12 +1,87 @@
 """
 Collection of various utility functions for cryptanalysis.
 """
+from math import log10
 import string
 
 from pwn.crypto import freq
+from pwn.crypto import lang
+from pwn.crypto import ngram
 
 # The expected index of coincidence value for English text
 ic_english = 0.065
+
+##############
+# FORMATTING #
+##############
+
+def format_solution(ciphertext, plaintext, language=lang.English):
+    """
+    Format a plaintext that was cleaned and decrypted.
+    The output will be formatted like the ciphertext that is passed.
+    """
+    i = 0
+    formatted = ""
+    for c in ciphertext:
+        if c in language.alphabet:
+           formatted += plaintext[i]
+           i += 1
+        else:
+            formatted += c
+    return formatted
+
+################
+# SCORING TEXT #
+################
+
+_lower = string.maketrans(string.ascii_lowercase, " " * len(string.ascii_lowercase))
+
+def score_text(text, language=lang.English):
+    clean = text.lower().translate(None, _lower)
+    return log_p(clean, language.get_ngrams(), 3)
+
+def score_list(texts, language=lang.English):
+    scores = [score_text(t, language) for t in texts]
+    return (float(sum(scores))/len(scores), texts)
+
+def best_scoring_text(texts, language=lang.English):
+    scores = [(score_text(t, language), t) for t in texts]
+    return min(scores, key=lambda(s,_):s)
+
+def best_scoring_list(lists, language=lang.English):
+    scores = [score_list(l, language) for l in lists]
+    return min(scores, key=lambda(s,_):s)
+
+##################
+# NGRAM ANALYSIS #
+##################
+
+def generate_ngram(text, n=3):
+    """
+    Generate n-gram frequency table for given text.
+    """
+    occurences = ngram = dict()
+    for i in range(len(text) - n):
+        try:
+            cur = text[i:i+n]
+            if cur in occurences:
+                occurences[cur] += 1
+            else:
+                occurences[cur] = 1
+        except IndexError:
+            pass
+
+    for (key,value) in occurences.items():
+        ngram[key] = float(value) / (len(text) - n + 1)
+
+    return ngram
+
+def log_p(text, ngrams, n):
+    return sum(log10(ngrams[ng]) for ng in generate_ngram(text, n).keys()) * -1.0
+
+######################
+# FREQUENCY ANALYSIS #
+######################
 
 def index_of_coincidence(frequencies, n):
     """
