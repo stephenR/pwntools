@@ -2,7 +2,6 @@
 Utilities for working with monoalphabetic ciphers.
 Includes tools for cracking several well-known ciphers.
 """
-
 import sys
 import heapq
 import string
@@ -91,16 +90,6 @@ def crack_substitution(ciphertext, num_starts=20, num_iterations=3000, frequenci
     if show_status: log.succeeded(encrypt_substitution(ciphertext, global_best_dict))
     return (global_best_dict, encrypt_substitution(ciphertext, global_best_dict))
 
-
-def generic_crack(ciphertext, candidates, language=lang.English):
-    distances = []
-    for candidate in candidates:
-        trial = encrypt_substitution(ciphertext, candidate)
-        candidate_freq = freq.text(trial, language.alphabet)
-        distances.append(util.squared_differences(candidate_freq, language.frequencies))
-    guess = distances.index(min(distances))
-    return (candidates[guess], encrypt_substitution(ciphertext, candidates[guess]))
-
 #################
 # AFFINE CIPHER #
 #################
@@ -158,14 +147,14 @@ def crack_affine(ciphertext, language=lang.English):
         frequencies: the target frequency distribution to compare against when cracking.
 
     Returns:
-        #TODO: Return a tuple with the key, format (key, plaintext)
-        the plaintext of the broken cipher.
+        a tuple (k, p) consisting of the key and the plaintext of the broken cipher.
     """
     n = len(language.alphabet)
     invertible = [i for i in range(n) if gcd(i,n) == 1]
     keys = [(a,b) for a in invertible for b in range(n)]
-    candidates = [_affine_dict(k, language) for k in keys]
-    return generic_crack(ciphertext, candidates, language)
+    candidates = [decrypt_affine(ciphertext, k, language) for k in keys]
+    _, plaintext = util.best_scoring_text(candidates)
+    return (keys[candidates.index(plaintext)], plaintext)
 
 #################
 # ATBASH CIPHER #
@@ -273,7 +262,6 @@ def crack_shift(ciphertext, language=lang.English):
     Returns:
         a tuple (k, p) consisting of the shift amount and the plaintext of the broken cipher.
     """
-    candidates = [_shift_dict(i, language) for i in range(len(language.alphabet))]
-    (dictionary, plaintext) = generic_crack(ciphertext, candidates, language)
-    shift = (key for key,value in dictionary.items() if value == language.alphabet[0]).next()
-    return (language.alphabet.index(shift), plaintext)
+    candidates = [decrypt_shift(ciphertext, i) for i in range(len(language.alphabet))]
+    _, plaintext = util.best_scoring_text(candidates, language)
+    return (candidates.index(plaintext), plaintext)
