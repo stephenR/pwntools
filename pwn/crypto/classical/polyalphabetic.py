@@ -1,9 +1,14 @@
+from functools import *
 import heapq
-import string
-from pwn import flat, log
+from itertools import *
 from math import ceil
-from numpy import mean
+import random
+import string
+
 import matplotlib.pyplot as plt
+from numpy import mean
+
+from pwn import flat, log
 
 from pwn.crypto import freq
 from pwn.crypto import lang
@@ -167,6 +172,19 @@ def decrypt(ciphertext, key, cipher, language=lang.English):
 # VIGENERE CIPHER #
 ###################
 
+_shift = lambda a,p,k: a[(a.index(p)+a.index(k)) % len(a)]
+_unshift = lambda a,c,k: a[(a.index(c)-a.index(k)) % len(a)]
+
+def encrypt_vigenere(plaintext, key, language=lang.English):
+    cleaned = util.clean_str(plaintext)
+    ciphertext = starmap(partial(_shift, language.alphabet), izip(cleaned, cycle(key)))
+    return "".join(ciphertext)
+
+def decrypt_vigenere(ciphertext, key, language=lang.English):
+    cleaned = util.clean_str(ciphertext)
+    ciphertext = starmap(partial(_shift, language.alphabet), izip(cleaned, cycle(key)))
+    return util.format_solution(ciphertext, "".join(plaintext))
+
 def split_vigenere(ciphertext, keylength):
     return (keylength, [ciphertext[i::keylength] for i in range(keylength)])
 
@@ -181,10 +199,11 @@ def crack_vigenere(ciphertext, known_period=None, language=lang.English):
     ct = filter(lambda c: c in alphabet, ciphertext)
 
     if known_period == None:
-        limit = int(len(ct) / (len(alphabet) * 1.47)) # Unicity distance of english, TODO: Be able to change language
+        limit = 20 # TODO: Calculate likely key length directly
         guesses = [split_vigenere(ct, period) for period in range(1, limit)]
         possible = key_period(guesses, language)
-    else: possible = [(known_period, 0)]
+    else:
+        possible = [(known_period, 0)]
 
     results = []
     for (period, score) in possible:
@@ -212,3 +231,53 @@ def crack_vigenere(ciphertext, known_period=None, language=lang.English):
 
     if len(results) == 1: return results[0][1]
     else: return [x[1] for x in sorted(results)]
+
+##################
+# AUTOKEY CIPHER #
+##################
+
+def encrypt_autokey(plaintext, key, language=lang.English):
+    cleaned = util.clean_str(plaintext)
+    keystream = key + cleaned
+    ciphertext = starmap(partial(_shift, language.alphabet), izip(cleaned, keystream))
+    return "".join(ciphertext)
+
+def decrypt_autokey(ciphertext, key, language=lang.English):
+    cleaned = util.clean_str(ciphertext)
+    keystream = key
+
+    i = 0
+    plaintext = ""
+    while i < len(cleaned):
+        p = _unshift(language.alphabet, cleaned[i], keystream[i])
+        plaintext += p
+        keystream += p
+        i += 1
+
+    return util.format_solution(ciphertext, plaintext, language)
+
+#def crack_autokey(ciphertext, max_len=10, language=lang.English):
+#    cleaned = util.clean_str(ciphertext)
+#
+#    for i in range(1, max_len+1):
+#        global_best_key = list(repeat(random.choice(language.alphabet), i))
+#        global_best_score = 9999
+#
+#        for j in range(i):
+#            local_best_key = list(global_best_key)
+#            local_best_score = global_best_score
+#            for c in language.alphabet:
+#                key = list(global_best_key)
+#                key[j] = c
+#                score = util.score_text(decrypt_autokey(cleaned, "".join(key)))
+#                #print "Trying %s %d" % (key, score)
+#                if score < local_best_score:
+#                    #print "New local (%s): %s" % (key, decrypt_autokey(cleaned, "".join(key)))
+#                    local_best_key = list(key)
+#                    local_best_score = score
+#            #print "Local done"
+#            global_best_key = list(local_best_key)
+#            global_best_score = local_best_score
+#        #print "Global done"
+#        print "%s -> %s" % ("".join(global_best_key), util.format_solution(ciphertext, decrypt_autokey(cleaned, global_best_key)))
+#

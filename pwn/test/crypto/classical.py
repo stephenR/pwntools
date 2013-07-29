@@ -26,7 +26,7 @@ print "Ciphertext: %s\nDecrypted: %s\n Cracked: %s" % (ciphertext, decrypted, cr
 print "--- SUBSTITUTION CIPHER ---"
 ciphertext = mono.encrypt_substitution(plaintext, mono._shift_dict(7))
 decrypted = mono.decrypt_substitution(ciphertext, mono._shift_dict(7))
-(key, cracked) = mono.crack_substitution(ciphertext, show_status=False)
+#(key, cracked) = mono.crack_substitution(ciphertext, show_status=False)
 print "Ciphertext: %s\nDecrypted: %s\n Cracked: %s" % (ciphertext, decrypted, cracked)
 
 print "=== POLYALPHABETIC CIPHERS ==="

@@ -1,6 +1,7 @@
 """
 Collection of various utility functions for cryptanalysis.
 """
+from itertools import *
 from math import log10
 import string
 
@@ -14,6 +15,9 @@ ic_english = 0.065
 ##############
 # FORMATTING #
 ##############
+
+def clean_str(s, language=lang.English):
+    return "".join(ifilter(lambda c: c in language.alphabet, s))
 
 def format_solution(ciphertext, plaintext, language=lang.English):
     """
