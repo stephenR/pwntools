@@ -48,6 +48,7 @@ try:
     from pwn.log        import die, bug
     from pwn.thread     import Thread
     from pwn.util       import *
+    from pwn.ui         import *
     from pwn.avoid      import *
     from pwn.context    import *
     from pwn.binutils   import *
@@ -55,16 +56,18 @@ try:
     from pwn.listutil   import *
     from pwn.iterutil   import *
     from pwn.genutil    import *
+    from pwn.decoutils  import coroutine
     from pwn.procutil   import *
     from pwn.debugging  import *
     from pwn.memoize    import memoize
     from pwn.process    import process
+    from pwn.ssh        import ssh
     from pwn.remote     import remote
     from pwn.handler    import handler
     from pwn.asm        import asm
     from pwn.useragents import randomua
     from pwn.splash     import splash
-    from pwn.elf        import ELF
+    from pwn.elf        import ELF, parse_ldd_output
     from pwn.rop        import ROP
     from pwn.ciic       import ciic
 
