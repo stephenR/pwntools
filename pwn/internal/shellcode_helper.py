@@ -1,10 +1,10 @@
-import pwn, ast
-from pwn import decoutils
+import pwn
 
 registered = {}
 
 # For the benefit of the shellcodes
 from pwn import *
+from socket import htons
 
 class AssemblerBlock:
     def __add__(self, other):
@@ -20,7 +20,7 @@ class AssemblerBlock:
         return pwn.asm(self)
 
     def __len__(self):
-        return len(flat(self))
+        return len(pwn.flat(self))
 
 class AssemblerBlob(AssemblerBlock):
     def __init__(self, blob, **kwargs):
@@ -81,7 +81,7 @@ class AssemblerContainer(AssemblerBlock):
                 elif cast == 'blob':
                     self.blocks.append(AssemblerBlob(b, **kwargs))
                 else:
-                    die('Invalid cast for AssemblerContainer')
+                    pwn.die('Invalid cast for AssemblerContainer')
             else:
                 pwn.die('Trying to force something of type ' + str(type(b)) + ' into an assembler block. Its value is:\n' + repr(b)[:100])
 
@@ -93,7 +93,7 @@ class AssemblerContainer(AssemblerBlock):
 
 def shellcode_wrapper(f, args, kwargs, avoider):
     kwargs = pwn.with_context(**kwargs)
-    kwargs = decoutils.kwargs_remover(f, kwargs, pwn.possible_contexts.keys() + ['raw'])
+    kwargs = pwn.decoutils.kwargs_remover(f, kwargs, pwn.possible_contexts.keys() + ['raw'])
     if avoider:
         return pwn.avoider(f)(*args, **kwargs)
     else:
@@ -120,15 +120,15 @@ def shellcode_reqs(blob = False, hidden = False, avoider = False, **supported_co
 
     def deco(f):
         f.supported_context = supported_context
-        @decoutils.ewraps(f)
+        @pwn.decoutils.ewraps(f)
         def wrapper(*args, **kwargs):
             with pwn.ExtraContext(kwargs) as kwargs:
                 for k, vs in supported_context.items():
                     if kwargs[k] not in vs:
                         pwn.die('Invalid context for ' + f.func_name + ': ' + k + '=' + str(kwargs[k]) + ' is not supported')
                 r = shellcode_wrapper(f, args, kwargs, avoider)
-                if kwargs.get('raw'):
-                    return r
+                if kwargs.get('raw') and isinstance(r, str):
+                    return r.rstrip() + '\n'
                 elif isinstance(r, AssemblerBlock):
                     return r
                 elif isinstance(r, (tuple, list)):
@@ -148,15 +148,22 @@ def arg_fixup(s):
     if not isinstance(s, str):
         return s
     try:
+        import ast
         s2 = ast.literal_eval(s)
         if isinstance(s2, int):
             return s2
     except:
         pass
+    try:
+        s2 = pwn.clookup(s, eval = True)
+        if isinstance(s2, list) and len(s2) == 1 and isinstance(s2[0], int):
+            return s2[0]
+    except:
+        pass
     return s
 
 def no_support(name, os, arch):
-    bug("OS/arch combination (%s, %s) is not supported for %s" % (os, arch, name))
+    pwn.bug("OS/arch combination (%s, %s) is not supported for %s" % (os, arch, name))
 
 def indent_shellcode(shellcode):
     if isinstance(shellcode, list):

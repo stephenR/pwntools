@@ -1,6 +1,7 @@
-import pwn, os, tempfile, time
+import pwn
 
 def attach_gdb_to_pid(pid, execute = None, execute_file = None):
+    import os, tempfile
     if execute is not None and execute_file is not None:
         pwn.die('Both execute and execute_file can\'t be set')
     try:
@@ -45,3 +46,4 @@ def attach_gdb(prog, execute = None, execute_file = None):
         if len(pids) > 1:
             pwn.log.info('Attaching to youngest process (PID: %d) of %d' % (pid, len(pids)))
     attach_gdb_to_pid(pid, execute = execute, execute_file = execute_file)
+    return pid

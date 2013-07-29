@@ -1,14 +1,8 @@
 from functools import *
 import heapq
 from itertools import *
-from math import ceil
-import random
 import string
-
-import matplotlib.pyplot as plt
-from numpy import mean
-
-from pwn import flat, log
+import pwn
 
 from pwn.crypto import freq
 from pwn.crypto import lang
@@ -60,6 +54,7 @@ def key_period(guesses, language=lang.English, prune = False, raw_score = False)
     Returns:
         a list of fitness scores of the form (length, mean_score).
     """
+    from numpy import mean
     fitness = []
     for (length, strands) in guesses:
         scores = strand_scores(strands, language)
@@ -72,13 +67,13 @@ def key_period(guesses, language=lang.English, prune = False, raw_score = False)
 
 def choose_alphabet(ciphertext, alphabet):
     if alphabet is None:
-        log.info('Trying to guess alphabet')
+        pwn.log.info('Trying to guess alphabet')
         ct = filter(lambda c: c in string.letters, ciphertext)
         if ct.isupper():
-            log.success('Using uppercase letters')
+            pwn.log.success('Using uppercase letters')
             alphabet = string.uppercase
         elif ct.islower():
-            log.success('Using lowercase letters')
+            pwn.log.success('Using lowercase letters')
             alphabet = string.lowercase
     if alphabet is None:
         raise TypeError('no alphabet')
@@ -102,6 +97,7 @@ def graph_key_period(ciphertext, splitFunction, limit = None, ic_target=util.ic_
     Returns:
         draws a graph to the screen instead of returning anything.
     """
+    import matplotlib.pyplot as plt
     alphabet = choose_alphabet(ciphertext, alphabet)
 
     if limit == None: limit = min((len(ciphertext) / 4) + 1, 20)
@@ -189,7 +185,7 @@ def split_vigenere(ciphertext, keylength):
     return (keylength, [ciphertext[i::keylength] for i in range(keylength)])
 
 def interleave_vigenere(strands, length):
-    return flat([[strand[n:n+1] for strand in strands] for n in range(length)])
+    return pwn.flat([[strand[n:n+1] for strand in strands] for n in range(length)])
 
 vigenere_cipher = (split_vigenere, interleave_vigenere)
 
@@ -257,6 +253,7 @@ def decrypt_autokey(ciphertext, key, language=lang.English):
     return util.format_solution(ciphertext, plaintext, language)
 
 #def crack_autokey(ciphertext, max_len=10, language=lang.English):
+#    import random
 #    cleaned = util.clean_str(ciphertext)
 #
 #    for i in range(1, max_len+1):

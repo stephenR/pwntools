@@ -1,7 +1,7 @@
 from pwn.internal.shellcode_helper import *
 from ..misc.pushstr import pushstr
 
-@shellcode_reqs(arch=['i386', 'amd64'], os=['linux', 'freebsd'])
+@shellcode_reqs(arch=['i386', 'amd64', 'arm'], os=['linux', 'freebsd'])
 def open_file(filepath, flags = 0, mode = 0, arch = None, os = None):
     """Args: filepath [flags = O_RDONLY] [mode = 0]
     Opens a file or directory with the specified flags and mode.
@@ -19,6 +19,9 @@ def open_file(filepath, flags = 0, mode = 0, arch = None, os = None):
     elif arch == 'amd64':
         if os in ['linux', 'freebsd']:
             return pushstr(filepath), _open_file_amd64(flags, mode)
+    elif arch == 'arm' and os == 'linux':
+        return _open_file_linux_arm(filepath, flags, mode)
+
     bug("OS/arch combination (%s, %s) is not supported for open_file" % (os, arch))
 
 def _open_file_linux_i386(flags, mode):
@@ -26,13 +29,13 @@ def _open_file_linux_i386(flags, mode):
 
     out += """
     mov ebx, esp
-    setfd ecx, %d
+    """ + pwn.shellcode.mov('ecx', flags, raw = True) + """
     push SYS_open
-    pop eax""" % flags
+    pop eax"""
 
     if (flags & 0o100) != 0:
         out += """
-    setfd edx, %d""" % mode
+    """ + pwn.shellcode.mov('edx', mode, raw = True)
 
     out += '\n    int 0x80'
 
@@ -58,15 +61,32 @@ def _open_file_amd64(flags, mode):
 
     out += """
             mov rdi, rsp
-            push SYS64_open
+            push SYS_open
             pop rax
-            setfd esi, %d
-""" % flags
+            """ + pwn.shellcode.mov('esi', flags, raw = True)
 
     if (flags & 0o100) != 0:
         out += """
-            setfd edx, %d""" % mode
+            """ + pwn.shellcode.mov('edx', mode, raw = True)
 
-    out += 'syscall'
+    out += """
+            syscall"""
 
     return out
+
+def _open_file_linux_arm(filepath, flags, mode):
+    out = []
+
+    if (flags & 0o100) != 0:
+        out += ['mov r2, #%d' % mode]
+
+
+    out += ['mov r1, #%d' % flags,
+            'adr r0, filepath',
+            'svc SYS_open',
+            'b after_open',
+            'filepath: .byte %s // %s' % (', '.join(hex(ord(c)) for c in filepath + '\x00'), filepath),
+            '.align 2',
+            'after_open:']
+
+    return '\n'.join(out)

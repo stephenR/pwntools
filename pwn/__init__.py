@@ -3,8 +3,6 @@ import os, traceback
 
 # Useful re-exports
 from time import sleep
-from socket import htons, inet_aton, inet_ntoa, gethostbyname
-from os import system
 
 # Install path
 installpath = os.path.dirname(os.path.realpath(__file__))
@@ -44,7 +42,6 @@ DEBUG = int(DEBUG)
 
 # Promote to toplevel
 try:
-    from pwn.consts     import *
     from pwn.log        import die, bug
     from pwn.thread     import Thread
     from pwn.util       import *
@@ -56,7 +53,7 @@ try:
     from pwn.listutil   import *
     from pwn.iterutil   import *
     from pwn.genutil    import *
-    from pwn.decoutils  import coroutine
+    from pwn.decoutils  import coroutine, memleaker
     from pwn.procutil   import *
     from pwn.debugging  import *
     from pwn.memoize    import memoize
@@ -64,21 +61,23 @@ try:
     from pwn.ssh        import ssh
     from pwn.remote     import remote
     from pwn.handler    import handler
-    from pwn.asm        import asm
+    from pwn.asm        import asm, disasm
     from pwn.useragents import randomua
     from pwn.splash     import splash
     from pwn.elf        import ELF, parse_ldd_output
     from pwn.rop        import ROP
+    from pwn.dynelf     import DynELF
     from pwn.ciic       import ciic
+    from pwn.memleak    import MemLeak
+    from pwn.safeeval   import expr_eval, const_eval
+    from pwn.clookup    import clookup
+    from pwn.fmtstring  import *
 
     import pwn.internal.init.session
-    import pwn.nasm
-    import pwn.gas
     import pwn.shellcode
     import pwn.sqli
-    import pwn.rop
+    import pwn.elf
     import pwn.crypto
-    import pwn.spn
 except SyntaxError:
     print "If you're happy and you know it, syntax error!"
     print "Syntax error"

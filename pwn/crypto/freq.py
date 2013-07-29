@@ -1,5 +1,4 @@
 import string
-import collections
 from itertools import *
 
 # The expected frequency distribution for English text
@@ -58,7 +57,8 @@ def text(string, alphabet=string.uppercase):
     Returns:
         the frequency distribution for the text string over the target alphabet.
     """
-    n = len(string)
+    import collections
+    n = len(alphabet)
     freq = collections.defaultdict(float)
     for c in string:
         if c in alphabet: freq[c] += 1.0
@@ -77,5 +77,6 @@ def count(string, alphabet=string.uppercase):
     Returns:
         a count of the different symbols in the text.
     """
+    import collections
     string = filter(lambda c: c in alphabet, string)
     return collections.Counter(string)

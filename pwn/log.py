@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 
-import sys, time, random, pwn
+import sys, pwn
 from pwn.internal.excepthook import addexcepthook
 import pwn.text as text
-import threading
 
 def _trace(s):
     if pwn.TRACE:
@@ -15,7 +14,12 @@ def _debug(s):
         sys.stderr.write(s)
         sys.stderr.flush()
 
+def _billboard(msg, step):
+    return [msg[i:i+step].ljust(step, ' ') for i in xrange(len(msg))]
+
+
 if sys.stderr.isatty() and not pwn.DEBUG:
+    import threading
     _spinner = None
     _message = ''
     _status = ''
@@ -23,22 +27,27 @@ if sys.stderr.isatty() and not pwn.DEBUG:
 
     class _Spinner(threading.Thread):
         def __init__(self):
+            import random
             threading.Thread.__init__(self)
             self.running = True
             self.i = 0
             self.numlines = 0
             self.spinner = random.choice([
-                    ['|', '/', '-', '\\'],
-                    ['q', 'p', 'b', 'd'],
-                    ['.', 'o', 'O', '0', '*', ' ', ' ', ' '],
-                    ['▁', '▃', '▄', '▅', '▆', '▇', '█', '▇', '▆', '▅', '▄', '▃'],
-                    ['┤', '┘', '┴', '└', '├', '┌', '┬', '┐'],
-                    ['←', '↖', '↑', '↗', '→', '↘', '↓', '↙'],
-                    ['◢', '◢', '◣', '◣', '◤', '◤', '◥', '◥'],
-                    ['◐', '◓', '◑', '◒'],
-                    ['▖', '▘', '▝', '▗'],
-                    ['.', 'o', 'O', '°', ' ', ' ', '°', 'O', 'o', '.', ' ', ' '],
-                    ['<', '<', '∧', '∧', '>', '>', 'v', 'v']
+                ['/.......','./......','../.....','.../....','..../...','...../..','....../.',
+                 '.......\\','......\\.','.....\\..','....\\...','...\\....','..\\.....','.\\......'],
+                _billboard('   8=================D~~~   D:  ', 5),
+                _billboard('   trollololol lololol lololol     trollolololoooool      ', 5),
+                ['|', '/', '-', '\\'],
+                ['q', 'p', 'b', 'd'],
+                ['.', 'o', 'O', '0', '*', ' ', ' ', ' '],
+                ['▁', '▃', '▄', '▅', '▆', '▇', '█', '▇', '▆', '▅', '▄', '▃'],
+                ['┤', '┘', '┴', '└', '├', '┌', '┬', '┐'],
+                ['←', '↖', '↑', '↗', '→', '↘', '↓', '↙'],
+                ['◢', '◢', '◣', '◣', '◤', '◤', '◥', '◥'],
+                ['◐', '◓', '◑', '◒'],
+                ['▖', '▘', '▝', '▗'],
+                ['.', 'o', 'O', '°', ' ', ' ', '°', 'O', 'o', '.', ' ', ' '],
+                ['<', '<', '∧', '∧', '>', '>', 'v', 'v']
             ])
 
         def format(self, marker, status):
@@ -94,7 +103,7 @@ if sys.stderr.isatty() and not pwn.DEBUG:
                 else:
                     break
                 self.i = (self.i + 1) % len(self.spinner)
-                time.sleep(0.1)
+                pwn.sleep(0.1)
 
     def _stop_spinner(marker = text.boldblue('[*]'), status = ''):
         global _spinner, _status
@@ -132,9 +141,10 @@ if sys.stderr.isatty() and not pwn.DEBUG:
         _debug(s)
 
     def waitfor(s):
-        global _message
+        global _message, _status
         if _spinner is not None:
             raise Exception('waitfor has already been called')
+        _status = ''
         _message = s
         _start_spinner()
 

@@ -2,7 +2,6 @@
 Collection of various utility functions for cryptanalysis.
 """
 from itertools import *
-from math import log10
 import string
 
 from pwn.crypto import freq
@@ -81,6 +80,7 @@ def generate_ngram(text, n=3):
     return ngram
 
 def log_p(text, ngrams, n):
+    from math import log10
     return sum(log10(ngrams[ng]) for ng in generate_ngram(text, n).keys()) * -1.0
 
 ######################

@@ -1,9 +1,9 @@
 from pwn.internal.shellcode_helper import *
 from ..misc.pushstr import pushstr
 
-@shellcode_reqs(arch=['i386', 'amd64'], os=['linux', 'freebsd'])
+@shellcode_reqs(arch=['i386', 'amd64', 'arm'], os=['linux', 'freebsd'])
 def read_stack(in_fd = 0, size = 255, allocate_stack = True, arch = None, os = None):
-    """Args: [in_fd (imm/reg) = STD_IN] [size = 255] [allocate_stack = True]
+    """Args: [in_fd (imm/reg) = STDIN_FILENO] [size = 255] [allocate_stack = True]
 
     Reads to the stack.
 
@@ -21,16 +21,18 @@ def read_stack(in_fd = 0, size = 255, allocate_stack = True, arch = None, os = N
             return _read_stack_freebsd_i386(in_fd, size, allocate_stack)
     if arch == 'amd64':
         return _read_stack_amd64(in_fd, size, allocate_stack)
+    if arch == 'arm' and os == 'linux':
+        return _read_stack_linux_arm(in_fd, size, allocate_stack)
 
     no_support('read_stack', os, arch)
 
 def _read_stack_linux_i386(in_fd, size, allocate_stack):
     out = """
-            setfd ebx, %s
+            """ + pwn.shellcode.mov('ebx', in_fd, raw = True) + """
             push SYS_read
             pop eax
             cdq
-            mov dl, %s""" % (in_fd, size)
+            mov dl, %s""" % size
 
     if allocate_stack:
         out += """
@@ -43,7 +45,7 @@ def _read_stack_linux_i386(in_fd, size, allocate_stack):
     return out
 
 def _read_stack_freebsd_i386(in_fd, size, allocate_stack):
-    out = ["setfd ebp, %s" % in_fd,
+    out = [pwn.shellcode.mov('ebp', in_fd, raw = True),
            "push SYS_read",
            "pop eax",
            pushstr(p32(size), null = False, raw = True),
@@ -71,8 +73,21 @@ def _read_stack_amd64(in_fd, size, allocate_stack):
         out += ["sub rsp, rdx"]
 
     out += ['mov rsi, rsp',
-            'push SYS64_read',
+            'push SYS_read',
             'pop rax',
             'syscall']
 
     return indent_shellcode(out)
+
+def _read_stack_linux_arm(in_fd, size, allocate_stack):
+    out = []
+
+    if allocate_stack:
+        out += ['sub sp, #%d' % pwn.align(4, size)]
+
+    out += [pwn.shellcode.mov('r0', in_fd, raw = True),
+            pwn.shellcode.mov('r2', size, raw = True),
+            'mov r1, sp',
+            'svc SYS_read']
+
+    return '\n'.join(out)

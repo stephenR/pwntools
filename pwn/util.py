@@ -1,5 +1,3 @@
-import struct, sys, subprocess, re, pwn, time
-
 # align
 def align_up(alignment, x):
     """Rounds x up to nearest multiple of the alignment."""
@@ -18,10 +16,12 @@ def align(alignment, x):
 # network utils
 def ip (host):
     """Resolve host and return IP as four byte string"""
-    return struct.unpack('I', pwn.inet_aton(pwn.gethostbyname(host)))[0]
+    import socket, struct
+    return struct.unpack('I', socket.inet_aton(socket.gethostbyname(host)))[0]
 
 def get_interfaces():
     """Gets all (interface, IPv4) of the local system."""
+    import subprocess, re
     d = subprocess.check_output('ip -4 -o addr', shell=True)
     ifs = re.findall(r'^\S+:\s+(\S+)\s+inet\s+([^\s/]+)', d, re.MULTILINE)
     return [i for i in ifs if i[0] != 'lo']
@@ -36,24 +36,28 @@ def size(n, abbriv = 'B', si = False):
     for suffix in ['K', 'M', 'G', 'T']:
         n /= base
         if n <= base:
-            num = '%.2f' % n
-            while num[-1] == '0':
-                num = num[:-1]
-            if num[-1] == '.':
-                num = num[:-1]
+            num = '%.02f' % n
+            # while num[-1] == '0':
+            #     num = num[:-1]
+            # if num[-1] == '.':
+            #     num = num[:-1]
             return '%s%s%s' % (num, suffix, abbriv)
 
-    return '%.2fP%s' % (n, abbriv)
+    return '%.02fP%s' % (n, abbriv)
 
 def read(path):
+    """Open file, return content."""
     with open(path) as f:
         return f.read()
 
 def write(path, data):
+    """Create new file or truncate existing to zero length and write data."""
     with open(path, 'w') as f:
         f.write(data)
 
 def bash(cmd, timeout = None, return_stderr = False):
+    """Execute cmd and return stdout and stderr in a tuple """
+    import subprocess, time
     p = subprocess.Popen(['/bin/bash', '-c', cmd],
                          stdin  = subprocess.PIPE,
                          stdout = subprocess.PIPE,
