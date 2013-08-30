@@ -101,10 +101,10 @@ def gcd(b, p):
 
 def modinv(a, m):
     """Modular multiplicative inverse, i.e. a^-1 = 1 (mod m)"""
-    a, u, v = egcd(a, m)
-    if a <> 1:
-        raise Exception('No inverse: %d (mod %d)' % (b, p))
-    return u
+    g, x, y = egcd(a, m)
+    if g <> 1:
+        raise Exception('No inverse: %d (mod %d)' % (a, m))
+    return x % m
 
 def crt(a, n):
     """Solve Chinese remainder theorem, eg. determine x in
