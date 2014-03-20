@@ -238,8 +238,10 @@ class ROP:
 
     def call(self, target, args = (), pivot = None):
         '''Irrelevant arguments should be marked by a None'''
-        target = self._resolve(target)
-        self._chain.append(('call', (target, pivot, pwn.tuplify(args))))
+        target_addr = self._resolve(target)
+        if not target_addr:
+            pwn.die('symbol {} not found'.format(target))
+        self._chain.append(('call', (target_addr, pivot, pwn.tuplify(args))))
         return self
 
     def raw(self, *words):
